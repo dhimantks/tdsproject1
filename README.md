@@ -1,12 +1,12 @@
-GitHub User and Repository Data Fetcher
-Overview
-This script fetches user and repository data from the GitHub API based on specified criteria. It retrieves users from a given location who have a minimum number of followers and then collects detailed information about their repositories. The data is cleaned and saved into two CSV files: users.csv and repositories.csv.
+#GitHub User and Repository Data Fetcher\n
+#Overview\n
+This script fetches user and repository data from the GitHub API based on specified criteria. It retrieves users from a given location who have a minimum number of followers and then collects detailed information about their repositories. The data is cleaned and saved into two CSV files: users.csv and repositories.csv.\n
 
-Features
-Fetch Users: Retrieves users from a specified location (default: Tokyo) with a minimum number of followers (default: 200).
-Clean Company Names: Trims whitespace from company names, removes leading @ symbols, and converts them to uppercase.
-Fetch Repositories: For each user, the script fetches their repositories, capturing details such as:
-Repository ID
+Features\n
+Fetch Users: Retrieves users from a specified location (default: Tokyo) with a minimum number of followers (default: 200).\n
+Clean Company Names: Trims whitespace from company names, removes leading @ symbols, and converts them to uppercase.\n
+Fetch Repositories: For each user, the script fetches their repositories, capturing details such as:\n
+Repository ID\n
 Name
 Full name
 Private status
