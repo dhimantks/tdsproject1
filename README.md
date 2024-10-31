@@ -1,55 +1,94 @@
-#GitHub User and Repository Data Fetcher\n
-#Overview\n
-This script fetches user and repository data from the GitHub API based on specified criteria. It retrieves users from a given location who have a minimum number of followers and then collects detailed information about their repositories. The data is cleaned and saved into two CSV files: users.csv and repositories.csv.\n
+# GitHub User and Repository Data Fetcher
 
-Features\n
-Fetch Users: Retrieves users from a specified location (default: Tokyo) with a minimum number of followers (default: 200).\n
-Clean Company Names: Trims whitespace from company names, removes leading @ symbols, and converts them to uppercase.\n
-Fetch Repositories: For each user, the script fetches their repositories, capturing details such as:\n
-Repository ID\n
-Name
-Full name
-Private status
-Owner's login
-License name
-Whether projects and wikis are enabled
-Creation, update, and push timestamps
-Repository statistics (size, stargazers count, watchers count, forks count, open issues count)
-Save Data: The user and repository data are saved into CSV files for further analysis.
-Requirements
-Python 3.x
-requests library
-pandas library
+This Python script interacts with the GitHub API to fetch data about users and their repositories based on specific criteria. It collects details about users in Tokyo with a minimum number of followers, cleans and processes this data, and saves it into CSV files for further analysis.
+
+## Overview
+
+The script performs the following main tasks:
+1. Fetches user data from GitHub based on a specified location and minimum followers.
+2. Cleans up user data, especially the company names.
+3. Retrieves and processes repositories for each user, including details such as license information, project status, and wiki status.
+4. Saves the collected data into two CSV files: `users.csv` and `repositories.csv`.
+
+## Features
+
+- Fetch user data based on location and follower count.
+- Clean user company names for consistency.
+- Fetch repository details, including:
+  - Repository name
+  - Owner login
+  - License name
+  - Project and Wiki status
+- Save the fetched data into CSV files for easy access and analysis.
+
+## Requirements
+
+To run this script, you need:
+- Python 3.x
+- The following Python libraries:
+  - Requests
+  - Pandas
+
+### Installation
+
 You can install the required libraries using pip:
 
-bash
-Copy code
+```bash
 pip install requests pandas
-Usage
-Setup:
-Replace your_github_token in the script with your personal GitHub API token. You can create a token by following this guide.
-Run the Script: Execute the script in your Python environment:
-bash
-Copy code
-python script_name.py
-Output: The script generates two CSV files:
-users.csv: Contains user data with fields such as login, name, company, location, email, hireable, bio, public_repos, followers, following, and created_at.
-repositories.csv: Contains repository data with fields including id, name, full_name, private, owner_login, html_url, description, fork, created_at, updated_at, pushed_at, homepage, size, stargazers_count, watchers_count, language, forks_count, open_issues_count, license_name, login, has_projects, and has_wiki.
-Code Explanation
-The script consists of the following main functions:
 
-clean_company_name(company): Cleans the company name by trimming whitespace, removing a leading @ symbol, and converting it to uppercase.
+GITHUB_API_URL = "https://api.github.com"
+TOKEN = "your_github_token"  # Replace with your GitHub API token
+HEADERS = {"Authorization": f"token {TOKEN}"}
+USERS_FILE = "users.csv"
+REPOS_FILE = "repositories.csv"
 
-get_users(location, min_followers): Fetches users based on the specified location and minimum followers. It calls the GitHub API to retrieve user data, processes it, and returns a DataFrame.
+def clean_company_name(company):
+    if not company:
+        return ""
+    company = company.strip()
+    if company.startswith('@'):
+        company = company[1:].strip()
+    return company.upper()
 
-get_repositories(users): Fetches repositories for each user in the provided DataFrame. It retrieves detailed repository information and returns a DataFrame.
+def get_users(location="Tokyo", min_followers=200):
+    users = []
+    page = 1
+    while True:
+        url = f"{GITHUB_API_URL}/search/users"
+        params = {"q": f"location:{location} followers:>{min_followers}", "per_page": 100, "page": page}
+        response = requests.get(url, headers=HEADERS).json()
+        if "items" not in response:
+            break
+        for user in response["items"]:
+            user_details = requests.get(user["url"], headers=HEADERS).json()
+            users.append({
+                "login": user_details.get("login", ""),
+                "name": user_details.get("name", ""),
+                "company": clean_company_name(user_details.get("company", "")),
+                "location": user_details.get("location", ""),
+                "email": user_details.get("email", ""),
+                "hireable": str(user_details.get("hireable", "")),
+                "bio": user_details.get("bio", ""),
+                "public_repos": user_details.get("public_repos", 0),
+                "followers": user_details.get("followers", 0),
+                "following": user_details.get("following", 0),
+                "created_at": user_details.get("created_at", "")
+            })
+        page += 1
+        if "items" not in response or not response["items"]:
+            break
+    return pd.DataFrame(users)
 
-save_to_csv(users_df, repos_df): Saves the user and repository DataFrames to CSV files.
+def save_to_csv(users_df, repos_df):
+    users_df.to_csv(USERS_FILE, index=False)
+    repos_df.to_csv(REPOS_FILE, index=False)
 
-main(): The main function that orchestrates the fetching and saving of data.
 
-Limitations
-The script may encounter rate limits imposed by the GitHub API. Consider implementing rate limiting or adding error handling to manage API responses gracefully.
-Users without any repositories or invalid users may cause the script to return errors; proper error handling can be added for robustness.
-Contribution
-Feel free to fork the repository, make improvements, or open issues if you encounter any bugs or have feature requests.
+def main():
+    print("Fetching users...")
+    users_df = get_users()
+    print("Fetching repositories...")
+    repos_df = get_repositories(users_df)
+    print("Saving data to CSV files...")
+    save_to_csv(users_df, repos_df)
+    print("Data saved successfully.")
